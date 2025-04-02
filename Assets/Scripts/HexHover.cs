@@ -43,34 +43,42 @@ public class HexHover : MonoBehaviour
 
     void OnMouseEnter()
     {
-        targetPosition = originalPosition + Vector3.up * hoverHeight;
-        FindObjectOfType<MovimentoDeCamera>().FocusOnHexagon(transform);
+        if(PauseMenu.isPause == false){
+            targetPosition = originalPosition + Vector3.up * hoverHeight;
+            FindObjectOfType<MovimentoDeCamera>().FocusOnHexagon(transform);
 
-        StopAllCoroutines();
-        StartCoroutine(TransitionMaterial(hexRenderer, normalMaterial, hoverMaterial, 0.5f));
-        ApplyMaterials();
+            StopAllCoroutines();
+            StartCoroutine(TransitionMaterial(hexRenderer, normalMaterial, hoverMaterial, 0.5f));
+            ApplyMaterials();
+
+        }
     }
 
     void OnMouseExit()
     {
-        targetPosition = originalPosition;
-        FindObjectOfType<MovimentoDeCamera>().ResetCamera();
+        if(PauseMenu.isPause == false){
+            targetPosition = originalPosition;
+            FindObjectOfType<MovimentoDeCamera>().ResetCamera();
 
-        StopAllCoroutines();
-        StartCoroutine(TransitionMaterial(hexRenderer, hoverMaterial, normalMaterial, 0.5f));
-        ResetMaterials();
+            StopAllCoroutines();
+            StartCoroutine(TransitionMaterial(hexRenderer, hoverMaterial, normalMaterial, 0.5f));
+            ResetMaterials();
+        }
+
     }
 
     void OnMouseDown()
     {
-        string sceneName = gameObject.name;
-        if (SceneExists(sceneName))
-        {
-            SceneManager.LoadScene(sceneName);
-        }
-        else
-        {
-            Debug.LogWarning("A cena '" + sceneName + "' não existe. Verifique o nome.");
+        if(PauseMenu.isPause == false){
+            string sceneName = gameObject.name;
+            if (SceneExists(sceneName))
+            {
+                SceneManager.LoadScene(sceneName);
+            }
+            else
+            {
+                Debug.LogWarning("A cena '" + sceneName + "' não existe. Verifique o nome.");
+            }        
         }
     }
 

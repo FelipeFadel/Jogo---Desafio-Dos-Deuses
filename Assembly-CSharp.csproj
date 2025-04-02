@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\HoverBrilhar.cs" />
+    <Compile Include="Assets\Scripts\reset.cs" />
     <Compile Include="Assets\Scripts\MovimentoFases.cs" />
     <Compile Include="Assets\Scripts\optionsMenu.cs" />
     <Compile Include="Assets\Scripts\BotoesFaseUm.cs" />
@@ -66,6 +67,10 @@
     <Compile Include="Assets\Scripts\Flutuar.cs" />
     <Compile Include="Assets\Scripts\BottunController.cs" />
     <Compile Include="Assets\Scripts\MovimentoDeCamera.cs" />
+    <Compile Include="Assets\Scripts\ProgessManager.cs" />
+    <Compile Include="Assets\Scripts\PauseMenu.cs" />
+    <Compile Include="Assets\Scripts\PlayerCtrl.cs" />
+    <Compile Include="Assets\Scripts\MovCam.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

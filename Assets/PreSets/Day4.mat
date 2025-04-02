@@ -25,18 +25,18 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _HorizonLineContribution: 0
-    - _HorizonLineExponent: 1
+    - _HorizonLineContribution: 0.045
+    - _HorizonLineExponent: 8.37
     - _SkyGradientExponent: 7
     - _SunDiscContribution: 1
-    - _SunDiscExponent: 2000
-    - _SunDiscMultiplier: 1990
-    - _SunHaloContribution: 0.574
-    - _SunHaloExponent: 50
+    - _SunDiscExponent: 2398
+    - _SunDiscMultiplier: 135
+    - _SunHaloContribution: 0.241
+    - _SunHaloExponent: 117
     - _Title: 0
     - __dirty: 0
     m_Colors:
-    - _HorizonLineColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HorizonLineColor: {r: 0.7688679, g: 1, b: 0.9812167, a: 1}
     - _SkyGradientBottom: {r: 0.5222751, g: 0.76317495, b: 0.8455882, a: 1}
     - _SkyGradientTop: {r: 0.22352943, g: 0.6039216, b: 0.7294118, a: 1}
     - _SunDiscColor: {r: 1, g: 1, b: 1, a: 1}

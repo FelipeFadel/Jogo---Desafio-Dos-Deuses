@@ -2,15 +2,24 @@ using TMPro;
 using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
+using UnityEngine.Networking;
+using System.IO;
 
 public class GcFase1 : MonoBehaviour
 {
-    public TextMeshProUGUI timerText;
+    public TextMeshProUGUI timerText, apolloFala;
     private float timeRemaining = 60f;
     private bool isCounting = true;
 
-    public string[] Enunciado;
-    public string[] Resposta;
+    public GameObject[] apolloScreen;
+    public GameObject[] NoPauseElements;
+    public string[] EnunciadoUm;
+    public string[] EnunciadoDois;
+    public string[] EnunciadoTres;
+    public string[] RespostaUm;
+    public string[] RespostaDois;
+    public string[] RespostaTres;
 
     string respostaCorreta, respostaPlayer;
 
@@ -20,60 +29,165 @@ public class GcFase1 : MonoBehaviour
     private int perguntaX;
 
     public GameObject[] pecas, encaixes;
-    private int acertos;
+    private int acertos, currentNivel, erros;
+
+    private string respostaPop;
 
     private Vector3[] posicoesIniciais;
 
-    void Start()
+    private List<string> enunciadosUmList = new List<string>();
+    private List<string> respostasUmList = new List<string>();
+    private List<string> enunciadosDoisList = new List<string>();
+    private List<string> respostasDoisList = new List<string>();
+    private List<string> enunciadosTresList = new List<string>();
+    private List<string> respostasTresList = new List<string>();
+
+    [System.Serializable]
+    public class PlayerInfo
     {
+        public string tipo; // "acerto" ou "erro"
+        public float tempo; // Tempo restante no momento da resposta
+    }
+
+    [System.Serializable]
+    public class PlayerData
+    {
+        public int acertos;  // Add this field for acertos
+        public int erros;    // Add this field for erros
+        public float tempoRestante; // Add this field for tempoRestante
+        public List<PlayerInfo> historico = new List<PlayerInfo>(); // Keep the historico list
+    }
+
+    private PlayerData playerData = new PlayerData();
+    private string caminhoArquivo;
+
+    void Awake()
+    {
+        caminhoArquivo = Path.Combine(Application.persistentDataPath, "player_data.json");
+
+    }
+
+    private void RegistrarAcao(bool isAcerto)
+    {
+        PlayerInfo acao = new PlayerInfo
+        {
+            tipo = isAcerto ? "acerto" : "erro",
+            tempo = timeRemaining
+        };
+
+        playerData.historico.Add(acao);
+        SalvarDados();
+    }
+
+    void SalvarDados()
+    {
+        PlayerData playerData = new PlayerData
+        {
+            acertos = acertos,
+            erros = erros,
+            tempoRestante = timeRemaining
+        };
+
+        string json = JsonUtility.ToJson(playerData, true);
+
+        // Salvar o JSON no caminho especificado
+        File.WriteAllText(caminhoArquivo, json);
+
+        Debug.Log("Dados salvos em: " + caminhoArquivo);
+    }
+
+    private void LimparListas()
+    {
+        enunciadosUmList.Clear();
+        respostasUmList.Clear();
+        enunciadosDoisList.Clear();
+        respostasDoisList.Clear();
+        enunciadosTresList.Clear();
+        respostasTresList.Clear();
+    }
+
+    void MostrarHistorico()
+    {
+        foreach (var acao in playerData.historico)
+        {
+            Debug.Log($"Tipo: {acao.tipo}, Tempo: {acao.tempo}");
+        }
+    }
+
+    private void encherListas()
+    {
+        // Preenchendo a pilha de enunciados
+        PreencherPilha(enunciadosUmList, EnunciadoUm);
+        PreencherPilha(enunciadosDoisList, EnunciadoDois);
+        PreencherPilha(enunciadosTresList, EnunciadoTres);
+
+        // Preenchendo a pilha de respostas
+        PreencherPilha(respostasUmList, RespostaUm);
+        PreencherPilha(respostasDoisList, RespostaDois);
+        PreencherPilha(respostasTresList, RespostaTres);
+    }
+
+    private void Start()
+    {
+
         StartCoroutine(TimerCountdown());
         acertos = -1;
+        erros = 0;
+        currentNivel = 1;
 
         posicoesIniciais = new Vector3[pecas.Length];
         for (int i = 0; i < pecas.Length; i++)
         {
             posicoesIniciais[i] = pecas[i].transform.position;
         }
-        
 
-        ShuffleArraysDouble(Enunciado, Resposta);
+        LimparListas();
+        encherListas();
+
         MudarBotoes();
         perguntaX = 0;
     }
 
-    private void AcrescimoPontos(int indice)
+    private void PreencherPilha(List<string> pilha, string[] array)
     {
-        // Verifique se o índice está dentro dos limites dos arrays
+        for (int i = array.Length - 1; i >= 0; i--) // Empilhando na ordem correta
+        {
+            pilha.Add(array[i]);
+        }
+    }
+
+    private void AcrescimoPontos(int indice, bool isAcerto)
+    {
         if (indice >= 0 && indice < pecas.Length && indice < encaixes.Length)
         {
-            // Obtenha a peça e o encaixe correspondente
+            Debug.Log("sdgwrogwnrogu");
             GameObject peca = pecas[indice];
             GameObject encaixe = encaixes[indice];
 
-            // Inicie a animação de movimento suave
-            StartCoroutine(MoverComAnimacao(peca, encaixe.transform.position));
+            if (isAcerto)
+            {
+                StartCoroutine(MoverComAnimacao(peca, encaixe.transform.position));
+            }
+            else
+            {
+                StartCoroutine(MoverComAnimacao(peca, posicoesIniciais[indice]));
+            }
         }
-
-        if(indice == 5)
-            SceneManager.LoadScene("Inicial");
     }
 
-    // Função de animação suave para mover a peça para o encaixe
     IEnumerator MoverComAnimacao(GameObject peca, Vector3 destino)
     {
-        float tempoDeMovimento = 1f; // Tempo que a animação vai durar (ajuste conforme necessário)
+        float tempoDeMovimento = 1f;
         float tempoAtual = 0f;
         Vector3 posicaoInicial = peca.transform.position;
 
-        // Enquanto o tempo de animação não acabar, mova a peça suavemente
         while (tempoAtual < tempoDeMovimento)
         {
-            tempoAtual += Time.deltaTime; // Aumenta o tempo de animação
-            peca.transform.position = Vector3.Lerp(posicaoInicial, destino, tempoAtual / tempoDeMovimento); // Movimento suave
-            yield return null; // Aguarda o próximo quadro
+            tempoAtual += Time.deltaTime;
+            peca.transform.position = Vector3.Lerp(posicaoInicial, destino, tempoAtual / tempoDeMovimento);
+            yield return null;
         }
 
-        // Garantir que a peça chegue exatamente ao destino
         peca.transform.position = destino;
     }
 
@@ -82,7 +196,7 @@ public class GcFase1 : MonoBehaviour
         for (int i = array.Length - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
-            (array[i], array[j]) = (array[j], array[i]); // Troca os elementos
+            (array[i], array[j]) = (array[j], array[i]);
         }
     }
 
@@ -97,20 +211,17 @@ public class GcFase1 : MonoBehaviour
         int length = array1.Length;
         int[] indices = new int[length];
 
-        // Inicializa o array de índices sequencialmente
         for (int i = 0; i < length; i++)
         {
             indices[i] = i;
         }
 
-        // Embaralha os índices usando o algoritmo Fisher-Yates
         for (int i = length - 1; i > 0; i--)
         {
             int j = Random.Range(0, i + 1);
-            (indices[i], indices[j]) = (indices[j], indices[i]); // Troca os índices
+            (indices[i], indices[j]) = (indices[j], indices[i]);
         }
 
-        // Reorganiza os elementos dos arrays usando os índices embaralhados
         string[] shuffledArray1 = new string[length];
         string[] shuffledArray2 = new string[length];
 
@@ -120,7 +231,6 @@ public class GcFase1 : MonoBehaviour
             shuffledArray2[i] = array2[indices[i]];
         }
 
-        // Copia os arrays embaralhados de volta para os originais
         for (int i = 0; i < length; i++)
         {
             array1[i] = shuffledArray1[i];
@@ -130,44 +240,131 @@ public class GcFase1 : MonoBehaviour
 
     private void validarResposta()
     {
-        // Verifique se a resposta do jogador corresponde à resposta correta
         if (respostaPlayer.Equals(respostaCorreta))
         {
             acertos++;
-            AcrescimoPontos(acertos);
-            // Se a resposta estiver correta
-            Debug.Log("Resposta correta!");
-            // Adicione lógica para premiar o jogador ou passar para a próxima pergunta
+
+            if(acertos > 4){
+                ProgessManager.Instance.markComplete();
+                SceneManager.LoadScene("FasesHub");
+            }
+
+            AcrescimoPontos(acertos, true);
+            timeRemaining += 5;
+            RegistrarAcao(true);
+            Debug.Log("acerto   " + acertos);
         }
         else
         {
-            // Se a resposta estiver incorreta
-            Debug.Log("Resposta incorreta.");
-            // Adicione lógica para penalizar o jogador ou dar outra chance
+            if(currentNivel == 1)
+            {
+                enunciadosUmList.Insert(0, TextEnunciado.text);
+                respostasUmList.Insert(0, respostaPop);
+            }
+            erros += 1;
+            AcrescimoPontos(acertos, false);
+
+            switch(erros){
+                case 1:
+                    apolloFala.text = "Você ja possui um erro, quando chegar a cinco terá que tentar novamente...";
+                    PauseMenu.PauseAnd(apolloScreen, NoPauseElements, 1);
+                break;
+                case 2:
+                    apolloFala.text = "Você ja possui dois erros, quando chegar a cinco terá que tentar novamente...";
+                    PauseMenu.PauseAnd(apolloScreen, NoPauseElements, 1);
+                break;
+                case 3:
+                    apolloFala.text = "Você ja possui três erros erro, quando chegar a cinco terá que tentar novamente...";
+                    PauseMenu.PauseAnd(apolloScreen, NoPauseElements, 1);
+                break;
+                case 4:
+                    apolloFala.text = "Você ja possui quatro erros, mais um e terá que tentar novamente...";
+                    PauseMenu.PauseAnd(apolloScreen, NoPauseElements, 1);
+                break;
+                case 5:
+                    apolloFala.text = "Vamos tentar novamente mortal...";
+                    ResetarFase();
+                break;
+
+            }
+            if(acertos > -1) {acertos--;}
+            RegistrarAcao(false);
+            Debug.Log("Erro   " + acertos);
         }
     }
 
     private void MudarBotoes()
     {
-        // Divide a primeira string do array Resposta
-        RespostaSplit = Resposta[perguntaX].Split('?');
-        TextEnunciado.text = Enunciado[perguntaX];
+        if(enunciadosUmList.Count == 0)
+            currentNivel = 2;
+        if(enunciadosDoisList.Count == 0)
+            currentNivel = 3;
+        if(enunciadosTresList.Count == 0)
+            currentNivel = 4;
+        
+        if (currentNivel == 1)
+        {
+            int lastIndex = respostasUmList.Count - 1;
+            respostaPop = respostasUmList[lastIndex];
+            respostasUmList.RemoveAt(lastIndex);
 
-        // Variável para armazenar a resposta correta
-        respostaCorreta = RespostaSplit[0];
+            RespostaSplit = respostaPop.Split('?');
+            TextEnunciado.text = enunciadosUmList[lastIndex];
+            enunciadosUmList.RemoveAt(lastIndex);
 
-        // Embaralha as respostas
-        ShuffleArray(RespostaSplit);
+            respostaCorreta = RespostaSplit[0];
 
-        // Atualiza os botões com as respostas
-        BotaoUm.text = RespostaSplit[0];
-        BotaoDois.text = RespostaSplit[1];
-        BotaoTres.text = RespostaSplit[2];
-        BotaoQuatro.text = RespostaSplit[3];
+            ShuffleArray(RespostaSplit);
 
-        Debug.Log("RESPOSTA CORRETA " + respostaCorreta);
+            BotaoUm.text = RespostaSplit[0];
+            BotaoDois.text = RespostaSplit[1];
+            BotaoTres.text = RespostaSplit[2];
+            BotaoQuatro.text = RespostaSplit[3];
+        }
+
+        if (currentNivel == 2)
+        {
+            int lastIndex = respostasDoisList.Count - 1;
+            respostaPop = respostasDoisList[lastIndex];
+            respostasDoisList.RemoveAt(lastIndex);
+
+            RespostaSplit = respostaPop.Split('?');
+            TextEnunciado.text = enunciadosDoisList[lastIndex];
+            enunciadosDoisList.RemoveAt(lastIndex);
+
+            respostaCorreta = RespostaSplit[0];
+
+            ShuffleArray(RespostaSplit);
+
+            BotaoUm.text = RespostaSplit[0];
+            BotaoDois.text = RespostaSplit[1];
+            BotaoTres.text = RespostaSplit[2];
+            BotaoQuatro.text = RespostaSplit[3];
+        }
+
+        if (currentNivel == 3)
+        {
+            int lastIndex = respostasTresList.Count - 1;
+            respostaPop = respostasTresList[lastIndex];
+            respostasTresList.RemoveAt(lastIndex);
+
+            RespostaSplit = respostaPop.Split('?');
+            TextEnunciado.text = enunciadosTresList[lastIndex];
+            enunciadosTresList.RemoveAt(lastIndex);
+
+            respostaCorreta = RespostaSplit[0];
+
+            ShuffleArray(RespostaSplit);
+
+            BotaoUm.text = RespostaSplit[0];
+            BotaoDois.text = RespostaSplit[1];
+            BotaoTres.text = RespostaSplit[2];
+            BotaoQuatro.text = RespostaSplit[3];
+        }
+
+        if(currentNivel == 4)
+            Debug.Log("asffffffffffffffffffff");
     }
-
 
     public void ClicouNoObjeto(GameObject botaoClicado)
     {
@@ -178,12 +375,11 @@ public class GcFase1 : MonoBehaviour
         validarResposta();
 
         perguntaX++;
-        // Verifique se o índice excedeu o tamanho do array antes de incrementar
-        if (perguntaX >= Enunciado.Length)
+
+        if (perguntaX >= EnunciadoUm.Length)
         {
-            // Reembaralha os arrays
-            ShuffleArraysDouble(Enunciado, Resposta);
-            perguntaX = 0; // Reinicia o índice
+            ShuffleArraysDouble(EnunciadoUm, RespostaUm);
+            perguntaX = 0;
         }
 
         MudarBotoes();
@@ -197,9 +393,9 @@ public class GcFase1 : MonoBehaviour
             timeRemaining--;
             AtualizarTimer();
 
-            // Se o tempo acabar, reseta os pontos e as peças
             if (timeRemaining <= 0)
             {
+                apolloFala.text = "O seu tempo acabou mortal...";
                 ResetarFase();
             }
         }
@@ -207,21 +403,15 @@ public class GcFase1 : MonoBehaviour
 
     private void ResetarFase()
     {
-        // Resetando os pontos
-        acertos = -1;
+        MostrarHistorico();
 
-        // Resetando as peças para suas posições iniciais
-        for (int i = 0; i < pecas.Length; i++)
-        {
-            pecas[i].transform.position = posicoesIniciais[i];
-        }
+        erros = 0;
+        acertos = 0;
 
-        StopCoroutine(TimerCountdown());
+        PlayerPrefs.DeleteKey("LastPhaseIndex");
+        PlayerPrefs.Save();
 
-        // Reiniciando o tempo
-        timeRemaining = 60f;
-        isCounting = true;
-        StartCoroutine(TimerCountdown());
+        SceneManager.LoadScene("FasesHub");
     }
 
     void AtualizarTimer()

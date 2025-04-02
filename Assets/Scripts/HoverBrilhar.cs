@@ -95,7 +95,7 @@ public class HoverBrilhar : MonoBehaviour
             rend.material.SetColor("_EmissionColor", clickColor);
         }
         
-        if (FaseName == "Fases")
+        if (FaseName == "FasesHub")
             SceneManager.LoadScene(FaseName);
         if (FaseName == "Creditos")
         {

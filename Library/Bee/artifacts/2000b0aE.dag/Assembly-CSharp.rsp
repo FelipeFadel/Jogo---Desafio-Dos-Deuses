@@ -341,9 +341,14 @@
 "Assets/Scripts/GcFase1.cs"
 "Assets/Scripts/HexHover.cs"
 "Assets/Scripts/HoverBrilhar.cs"
+"Assets/Scripts/MovCam.cs"
 "Assets/Scripts/MovimentoDeCamera.cs"
 "Assets/Scripts/MovimentoFases.cs"
 "Assets/Scripts/optionsMenu.cs"
+"Assets/Scripts/PauseMenu.cs"
+"Assets/Scripts/PlayerCtrl.cs"
+"Assets/Scripts/ProgessManager.cs"
+"Assets/Scripts/reset.cs"
 -langversion:9.0
 
 /deterministic
